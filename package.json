@@ -1,0 +1,16 @@
+{
+  "name": "download-m3u8",
+  "type": "module",
+  "version": "1.0.0",
+  "main": "download-ts.js",
+  "scripts": {
+    "start": "node download-ts.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "argparse": "^2.0.1"
+  }
+}

@@ -1,9 +1,11 @@
+import { Semaphore } from './semaphore.js';
+
 export class M3U8VideoDownloader {
     constructor(n_parrallel) {
         this.n_parrallel = n_parrallel;
     }
 
-    async download({ url, base_url, merge = true }) {
+    async get_playlist(url) {
         console.log('Downloading playlist...');
         let resources = await fetch(url)
             .then((response) => {
@@ -24,7 +26,10 @@ export class M3U8VideoDownloader {
             .replace(/\n?#.*/g, '')
             .split('\n')
             .filter((e) => e != '');
+        return resources;
+    }
 
+    async download({ resources, base_url }) {
         const bufferArray = [];
 
         const download_sem = new Semaphore(this.n_parrallel);
@@ -76,39 +81,7 @@ export class M3U8VideoDownloader {
         }
 
         await total_sem.wait();
-        if (merge) {
-            return Buffer.concat(bufferArray);
-        } else {
-            return bufferArray;
-        }
-    }
-}
 
-class Semaphore {
-    constructor(n) {
-        this.n = n;
-        this.promise_callback = (resolve, reject) => {};
-        this.blocked = [];
-    }
-
-    async wait() {
-        this.n -= 1;
-
-        return new Promise((resolve, reject) => {
-            this.blocked.push(resolve);
-            this.try_next();
-        });
-    }
-
-    free() {
-        this.n += 1;
-        this.try_next();
-    }
-
-    try_next() {
-        if (this.n >= 0 && this.blocked.length > 0) {
-            const [resolve] = this.blocked.splice(0, 1);
-            resolve();
-        }
+        return bufferArray;
     }
 }

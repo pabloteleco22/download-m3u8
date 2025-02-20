@@ -2,7 +2,7 @@
 
 import { ArgumentParser } from 'argparse';
 
-import { FileWrapper } from './file_wrapper.js';
+import { MergeBehaviour, DontMergeBehaviour } from './behaviours.js';
 
 import { M3U8VideoDownloader } from './video-downloader.js';
 
@@ -34,16 +34,32 @@ const merge = !args.dont_merge;
 
 const downloader = new M3U8VideoDownloader(parallel_downloads);
 
+let resources;
+try {
+    resources = await downloader.get_playlist(url);
+} catch (e) {
+    console.error(e);
+    process.exit(1);
+}
+
+const behaviour_args = {
+    output_file,
+    file_mode,
+};
+
+const behaviour = merge
+    ? new MergeBehaviour(behaviour_args)
+    : new DontMergeBehaviour({ ...behaviour_args, resources });
+
 let download;
 try {
     download = await downloader.download({
-        url,
+        resources,
         base_url: base_url ?? new URL(url).origin,
-        merge,
     });
 } catch (e) {
     console.error(e);
     process.exit(1);
 }
 
-console.log(download);
+await behaviour.process(download);

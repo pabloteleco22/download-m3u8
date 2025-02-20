@@ -1,16 +1,23 @@
 {
-  "name": "download-m3u8",
-  "type": "module",
-  "version": "1.0.0",
-  "main": "download-ts.js",
-  "scripts": {
-    "start": "node download-ts.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "argparse": "^2.0.1"
-  }
+    "name": "download-m3u8",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/pabloteleco22/download-m3u8.git"
+    },
+    "author": "",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/pabloteleco22/download-m3u8/issues"
+    },
+    "homepage": "https://github.com/pabloteleco22/download-m3u8#readme",
+    "description": "",
+    "dependencies": {
+        "argparse": "^2.0.1"
+    }
 }

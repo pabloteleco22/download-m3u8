@@ -4,6 +4,7 @@ export class M3U8VideoDownloader {
     }
 
     async download({ url, base_url, merge = true }) {
+        console.log('Downloading playlist...');
         let resources = await fetch(url)
             .then((response) => {
                 if (!response.ok) {
@@ -26,7 +27,10 @@ export class M3U8VideoDownloader {
 
         const bufferArray = [];
 
-        const semaphore = new Semaphore(this.n_parrallel);
+        const download_sem = new Semaphore(this.n_parrallel);
+        const total_sem = new Semaphore(0);
+
+        let downloaded_resources = 0;
 
         for (let i = 0; i < resources.length; ++i) {
             let resource = resources[i];
@@ -42,17 +46,26 @@ export class M3U8VideoDownloader {
 
             const full_resource = `${base_url}${resource}`;
 
-            await semaphore.wait();
+            await download_sem.wait();
 
             console.log(`Downloading ${full_resource}...`);
-            const data = fetch(full_resource)
+            fetch(full_resource)
                 .then((response) => {
                     if (!response.ok) {
                         console.error(`Fetch failed: ${response.status}`);
                         console.error(response);
                         process.exit(1);
                     }
+
                     return response.arrayBuffer();
+                })
+                .then((body) => {
+                    bufferArray[i] = Buffer.from(body);
+                    download_sem.free();
+                    ++downloaded_resources;
+                    if (downloaded_resources >= resources.length) {
+                        total_sem.free();
+                    }
                 })
                 .catch((error) => {
                     console.log(
@@ -60,10 +73,9 @@ export class M3U8VideoDownloader {
                     );
                     process.exit(1);
                 });
-            semaphore.free();
-            bufferArray[i] = Buffer.from(data);
         }
 
+        await total_sem.wait();
         if (merge) {
             return Buffer.concat(bufferArray);
         } else {
@@ -94,7 +106,7 @@ class Semaphore {
     }
 
     try_next() {
-        if (this.n > 0 && this.blocked.length > 0) {
+        if (this.n >= 0 && this.blocked.length > 0) {
             const [resolve] = this.blocked.splice(0, 1);
             resolve();
         }

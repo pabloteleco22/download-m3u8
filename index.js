@@ -6,7 +6,7 @@ import { FileWrapper } from './file_wrapper.js';
 
 import { M3U8VideoDownloader } from './video-downloader.js';
 
-const DEFAULT_PARALLEL_DOWNLOADS = 8;
+const DEFAULT_PARALLEL_DOWNLOADS = 40;
 
 const parser = new ArgumentParser({ description: 'TS downloader' });
 

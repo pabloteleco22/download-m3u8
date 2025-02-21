@@ -32,34 +32,51 @@ const parallel_downloads =
         : DEFAULT_PARALLEL_DOWNLOADS;
 const merge = !args.dont_merge;
 
+const on_error_no_behaviour = (message) => {
+    console.error(message);
+    process.exit(1);
+};
+
 const downloader = new M3U8VideoDownloader(parallel_downloads);
 
 let resources;
 try {
-    resources = await downloader.get_playlist(url);
+    resources = await downloader.get_playlist(url, on_error_no_behaviour);
 } catch (e) {
-    console.error(e);
+    console.error(e.message);
     process.exit(1);
 }
 
 const behaviour_args = {
     output_file,
     file_mode,
+    resources: resources.length,
+    constructor_error: on_error_no_behaviour,
 };
 
 const behaviour = merge
     ? new MergeBehaviour(behaviour_args)
-    : new DontMergeBehaviour({ ...behaviour_args, resources });
+    : new DontMergeBehaviour(behaviour_args);
+
+const on_error_behaviour = async (message) => {
+    console.error(message);
+    await behaviour.process_error();
+    process.exit(1);
+};
 
 let download;
 try {
     download = await downloader.download({
         resources,
         base_url: base_url ?? new URL(url).origin,
+        on_error: on_error_behaviour,
     });
 } catch (e) {
-    console.error(e);
-    process.exit(1);
+    await on_error_behaviour(e.message);
 }
 
-await behaviour.process(download);
+try {
+    await behaviour.process(download);
+} catch (e) {
+    await on_error_behaviour(e.message);
+}

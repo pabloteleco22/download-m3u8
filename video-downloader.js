@@ -5,21 +5,19 @@ export class M3U8VideoDownloader {
         this.n_parrallel = n_parrallel;
     }
 
-    async get_playlist(url) {
+    async get_playlist(url, on_error) {
         console.log('Downloading playlist...');
         let resources = await fetch(url)
-            .then((response) => {
+            .then(async (response) => {
                 if (!response.ok) {
-                    console.error(`Fetch failed: ${response.status}`);
-                    process.exit(1);
+                    await on_error(`Fetch failed: ${response.status}`);
                 }
                 return response.text();
             })
             .catch((error) => {
-                console.error(
-                    'There was a problem with the request:' + error.message
+                on_error(
+                    `There was a problem with the request: ${error.message}`
                 );
-                process.exit(1);
             });
 
         resources = resources
@@ -29,7 +27,7 @@ export class M3U8VideoDownloader {
         return resources;
     }
 
-    async download({ resources, base_url }) {
+    async download({ resources, base_url, on_error }) {
         const bufferArray = [];
 
         const download_sem = new Semaphore(this.n_parrallel);
@@ -55,11 +53,18 @@ export class M3U8VideoDownloader {
 
             console.log(`Downloading ${full_resource}...`);
             fetch(full_resource)
-                .then((response) => {
+                .then(async (response) => {
                     if (!response.ok) {
-                        console.error(`Fetch failed: ${response.status}`);
-                        console.error(response);
-                        process.exit(1);
+                        await on_error(
+                            `\nFetch failed: ${JSON.stringify(
+                                {
+                                    status: response.status,
+                                    response: response.url,
+                                },
+                                null,
+                                4
+                            )}\n`
+                        );
                     }
 
                     return response.arrayBuffer();
@@ -72,11 +77,10 @@ export class M3U8VideoDownloader {
                         total_sem.free();
                     }
                 })
-                .catch((error) => {
-                    console.log(
+                .catch(async (error) => {
+                    await on_error(
                         `There was a problem with the request ${full_resource}: ${error.message}`
                     );
-                    process.exit(1);
                 });
         }
 
